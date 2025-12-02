@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:323011466008:android:7e1734345d40b85907446d",
+        "mobilesdk_app_id": "",
         "android_client_info": {
           "package_name": "com.quickSOS.SOS"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyABJaYCU9bcmlW9poiAzcCUonG8lCWpUps"
+          "current_key": ""
         }
       ],
       "services": {
