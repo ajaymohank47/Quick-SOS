@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated(); // Users can read other users (e.g. to add contacts)
+      allow write: if isOwner(userId); // Only owner can write their profile
+    }
+
+    // SOS collection
+    match /sos/{sosId} {
+      // Only the owner can create/update via Cloud Functions (which use Admin SDK)
+      // But if we want to allow client-side reads:
+      
+      allow read: if isAuthenticated() && (
+        resource.data.userUid == request.auth.uid || 
+        request.auth.uid in resource.data.contactsNotified
+      );
+      
+      // Writes are restricted to Cloud Functions (Admin SDK bypasses rules)
+      // or if we strictly want to prevent client-side writes:
+      allow write: if false; 
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "323011466008",
+    "project_id": "quick-sos-97d28",
+    "storage_bucket": "quick-sos-97d28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:323011466008:android:7e1734345d40b85907446d",
+        "android_client_info": {
+          "package_name": "com.quickSOS.SOS"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABJaYCU9bcmlW9poiAzcCUonG8lCWpUps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
