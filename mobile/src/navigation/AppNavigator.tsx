@@ -6,7 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SOSActiveScreen from '../screens/SOSActiveScreen';
 import ContactsScreen from '../screens/ContactsScreen';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text as RNText } from 'react-native';
 
 import SOSFeedScreen from '../screens/SOSFeedScreen';
 import SOSDetailScreen from '../screens/SOSDetailScreen';
@@ -29,6 +29,7 @@ export const AppNavigator = () => {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#FF0000" />
+                <RNText style={{ marginTop: 20 }}>Loading...</RNText>
             </View>
         );
     }

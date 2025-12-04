@@ -6,6 +6,7 @@ import { firebaseDb } from '../services/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Button, useTheme, Card, Avatar } from 'react-native-paper';
 import MapView, { Marker } from 'react-native-maps';
+import ChatComponent from '../components/ChatComponent';
 
 type SOSDetailScreenRouteProp = RouteProp<RootStackParamList, 'SOSDetail'>;
 
@@ -18,6 +19,7 @@ interface SOSData {
         lng: number;
     };
     imageRefs: string[];
+    batteryLevel?: number;
 }
 
 const SOSDetailScreen = () => {
@@ -84,29 +86,32 @@ const SOSDetailScreen = () => {
                     <Avatar.Icon size={50} icon="alert" style={{ backgroundColor: theme.colors.error }} color={theme.colors.onError} />
                     <View style={{ marginLeft: 15 }}>
                         <Text variant="headlineSmall" style={{ fontWeight: 'bold' }}>{sosData.userName}</Text>
-                        <Text variant="bodyMedium" style={{ color: theme.colors.error }}>Status: {sosData.status.toUpperCase()}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text variant="bodyMedium" style={{ color: theme.colors.error, marginRight: 10 }}>Status: {sosData.status.toUpperCase()}</Text>
+                            {sosData.batteryLevel !== undefined && (
+                                <Text variant="bodyMedium" style={{ color: theme.colors.outline }}>🔋 {sosData.batteryLevel}%</Text>
+                            )}
+                        </View>
                     </View>
                 </View>
 
                 <Text variant="titleMedium" style={{ marginTop: 20, marginBottom: 10 }}>Evidence</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.evidenceList}>
-                    {sosData.imageRefs && sosData.imageRefs.length > 0 ? (
-                        sosData.imageRefs.map((url, index) => (
-                            <Image key={index} source={{ uri: url }} style={styles.evidenceImage} />
-                        ))
-                    ) : (
-                        <Text style={{ color: theme.colors.outline }}>No images captured.</Text>
-                    )}
-                </ScrollView>
+                <View style={{ height: 160 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.evidenceList}>
+                        {sosData.imageRefs && sosData.imageRefs.length > 0 ? (
+                            sosData.imageRefs.map((url, index) => (
+                                <Image key={index} source={{ uri: url }} style={styles.evidenceImage} />
+                            ))
+                        ) : (
+                            <Text style={{ color: theme.colors.outline, padding: 10 }}>No images captured.</Text>
+                        )}
+                    </ScrollView>
+                </View>
 
-                <Button
-                    mode="contained"
-                    style={{ marginTop: 20 }}
-                    buttonColor={theme.colors.primary}
-                    onPress={() => { /* TODO: Open in Maps App */ }}
-                >
-                    Navigate to Location
-                </Button>
+                <Text variant="titleMedium" style={{ marginTop: 20, marginBottom: 10 }}>Live Chat</Text>
+                <View style={{ flex: 1, backgroundColor: theme.colors.surfaceVariant, borderRadius: 15, overflow: 'hidden' }}>
+                    <ChatComponent sosId={sosData.sosId} />
+                </View>
             </View>
         </View>
     );

@@ -12,7 +12,7 @@ export const createSOS = functions.https.onCall(async (data, context) => {
         );
     }
 
-    const { currentLocation, imageRefs } = data;
+    const { location, images, batteryLevel } = data;
     const uid = context.auth.uid;
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
@@ -34,14 +34,15 @@ export const createSOS = functions.https.onCall(async (data, context) => {
         userName,
         startTime: admin.firestore.FieldValue.serverTimestamp(),
         status: 'active',
-        currentLocation,
-        imageRefs: imageRefs || [], // Array of Storage URLs
+        currentLocation: location,
+        images: images || [],
+        batteryLevel: batteryLevel || null,
         history: [
             {
                 ts: new Date().toISOString(),
-                lat: currentLocation.lat,
-                lng: currentLocation.lng,
-                imageRefs: imageRefs || [],
+                location: location,
+                images: images || [],
+                batteryLevel: batteryLevel || null,
             },
         ],
         contactsNotified: contacts,

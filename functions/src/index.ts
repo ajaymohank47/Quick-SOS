@@ -10,3 +10,4 @@ export * from './sos/endSOS';
 export * from './sos/registerDeviceToken';
 export * from './sos/cleanupOldSOS';
 export * from './sos/updateSOSLocation';
+export * from './sos/messaging';

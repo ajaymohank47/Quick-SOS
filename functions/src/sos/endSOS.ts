@@ -46,7 +46,7 @@ export const endSOS = functions.https.onCall(async (data, context) => {
     }
 
     if (tokens.length > 0) {
-        const payload = {
+        const message = {
             notification: {
                 title: `SOS Ended`,
                 body: `${sosData.userName} is safe now.`,
@@ -55,8 +55,9 @@ export const endSOS = functions.https.onCall(async (data, context) => {
                 sosId,
                 type: 'SOS_ENDED',
             },
+            tokens: tokens,
         };
-        await fcm.sendToDevice(tokens, payload);
+        await admin.messaging().sendMulticast(message);
     }
 
     return { success: true };

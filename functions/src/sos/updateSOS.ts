@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();
-const fcm = admin.messaging();
+
 
 export const updateSOS = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
@@ -12,7 +12,7 @@ export const updateSOS = functions.https.onCall(async (data, context) => {
         );
     }
 
-    const { sosId, location, imageRefs } = data;
+    const { sosId, location, images, batteryLevel } = data;
     const sosRef = db.collection('sos').doc(sosId);
     const sosDoc = await sosRef.get();
 
@@ -37,13 +37,15 @@ export const updateSOS = functions.https.onCall(async (data, context) => {
 
     await sosRef.update({
         currentLocation: location,
-        imageRefs: imageRefs ? admin.firestore.FieldValue.arrayUnion(...imageRefs) : sosData.imageRefs,
+        images: images ? admin.firestore.FieldValue.arrayUnion(...images) : sosData.images,
+        batteryLevel: batteryLevel || sosData.batteryLevel,
         history: admin.firestore.FieldValue.arrayUnion({
             ts: new Date().toISOString(),
-            lat: location.lat,
-            lng: location.lng,
-            imageRefs: imageRefs || [],
+            location: location,
+            images: images || [],
+            batteryLevel: batteryLevel || null,
         }),
+        lastUpdate: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     // Notify contacts about update (optional, maybe silent or less frequent)

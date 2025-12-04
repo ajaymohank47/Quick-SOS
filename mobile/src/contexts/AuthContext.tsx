@@ -52,7 +52,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const googleCredential = auth.GoogleAuthProvider.credential(idToken);
 
             // Sign-in the user with the credential
-            await auth().signInWithCredential(googleCredential);
+            const userCredential = await auth().signInWithCredential(googleCredential);
+            const user = userCredential.user;
+
+            // Create/Update user in Firestore
+            if (user) {
+                const userRef = firebaseDb.collection('users').doc(user.uid);
+                const doc = await userRef.get();
+
+                if (!doc.exists) {
+                    await userRef.set({
+                        uid: user.uid,
+                        email: user.email?.toLowerCase(),
+                        name: user.displayName,
+                        photoURL: user.photoURL,
+                        contacts: [],
+                        deviceTokens: [],
+                        lastActive: new Date(),
+                    });
+                } else {
+                    await userRef.update({
+                        lastActive: new Date(),
+                        // Update these if they changed
+                        email: user.email?.toLowerCase(),
+                        name: user.displayName,
+                        photoURL: user.photoURL,
+                    });
+                }
+            }
+
         } catch (error) {
             console.error('Google Sign-In Error:', error);
             alert('Google Sign-In failed. Check console for details.');

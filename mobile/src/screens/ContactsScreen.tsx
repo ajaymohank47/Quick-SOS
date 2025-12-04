@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, FlatList, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { firebaseDb, arrayUnion } from '../services/firebase';
+import { firebaseDb } from '../services/firebase';
+import { userService } from '../services/userService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, List, Text, IconButton, useTheme, Avatar, Divider } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -41,44 +42,48 @@ const ContactsScreen = () => {
     }, [user]);
 
     const addContact = async () => {
-        if (!searchEmail || !user) return;
+        const emailToSearch = searchEmail.trim();
+        if (!emailToSearch || !user) return;
 
         // Check if already added
-        if (contacts.some(c => c.email.toLowerCase() === searchEmail.toLowerCase())) {
+        if (contacts.some(c => c.email.toLowerCase() === emailToSearch.toLowerCase())) {
             Alert.alert('Contact exists', 'This user is already in your emergency contacts.');
             return;
         }
 
         setLoading(true);
         try {
-            // Find user by email
-            const querySnapshot = await firebaseDb.collection('users').where('email', '==', searchEmail).get();
-            if (querySnapshot.empty) {
-                Alert.alert('User not found', 'No user found with this email address.');
-                setLoading(false);
-                return;
-            }
-
-            const contactDoc = querySnapshot.docs[0];
-            const contactUid = contactDoc.id;
-
-            if (contactUid === user.uid) {
-                Alert.alert('Invalid Contact', 'You cannot add yourself as an emergency contact.');
-                setLoading(false);
-                return;
-            }
-
-            await firebaseDb.collection('users').doc(user.uid).update({
-                contacts: arrayUnion(contactUid)
-            });
-
+            await userService.addContact(user.uid, emailToSearch);
             setSearchEmail('');
             Alert.alert('Success', 'Emergency contact added.');
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to add contact.');
+        } catch (error: any) {
+            console.error("Error adding contact:", error);
+            Alert.alert('Error', error.message || 'Failed to add contact.');
         }
         setLoading(false);
+    };
+
+    const removeContact = async (contactUid: string) => {
+        if (!user) return;
+        Alert.alert(
+            'Remove Contact',
+            'Are you sure you want to remove this emergency contact?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await userService.removeContact(user.uid, contactUid);
+                        } catch (error) {
+                            console.error("Error removing contact:", error);
+                            Alert.alert('Error', 'Failed to remove contact.');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -116,7 +121,7 @@ const ContactsScreen = () => {
                         title={item.name || 'Unknown'}
                         description={item.email}
                         left={props => <Avatar.Text {...props} size={40} label={item.name ? item.name[0].toUpperCase() : 'U'} />}
-                        right={props => <IconButton {...props} icon="delete" onPress={() => { }} />} // TODO: Implement delete
+                        right={props => <IconButton {...props} icon="delete" onPress={() => removeContact(item.uid)} />}
                     />
                 )}
                 ListEmptyComponent={

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { firebaseDb } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Card, Avatar, useTheme, ActivityIndicator, IconButton } from 'react-native-paper';
+import { Text, Card, Avatar, useTheme, IconButton } from 'react-native-paper';
 import { formatDistanceToNow } from 'date-fns'; // You might need to install date-fns or use a simple formatter
 
 interface SOSAlert {

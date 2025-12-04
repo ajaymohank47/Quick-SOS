@@ -2,10 +2,9 @@ import * as functions from 'firebase-functions';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
-// Note: Secrets should be set via firebase functions:config:set cloudinary.key="KEY" cloudinary.secret="SECRET"
-const cloudName = functions.config().cloudinary?.cloud_name || 'demo';
-const apiKey = functions.config().cloudinary?.key || '123456789';
-const apiSecret = functions.config().cloudinary?.secret || 'secret';
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME || functions.config().cloudinary?.cloud_name;
+const apiKey = process.env.CLOUDINARY_API_KEY || functions.config().cloudinary?.key;
+const apiSecret = process.env.CLOUDINARY_API_SECRET || functions.config().cloudinary?.secret;
 
 cloudinary.config({
     cloud_name: cloudName,

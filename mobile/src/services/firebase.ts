@@ -16,6 +16,7 @@ export const firebaseMessaging = messaging();
 export const firebaseStorage = storage();
 
 export const arrayUnion = firestore.FieldValue.arrayUnion;
+export const arrayRemove = firestore.FieldValue.arrayRemove;
 export const serverTimestamp = firestore.FieldValue.serverTimestamp;
 
 // Use emulator if in development (optional, can be toggled)

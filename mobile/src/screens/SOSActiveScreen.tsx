@@ -1,15 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
-import * as SecureStore from 'expo-secure-store';
-import { firebaseFunctions, firebaseStorage } from '../services/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BACKGROUND_LOCATION_TASK } from '../tasks/backgroundLocation';
-import { useTheme, Button } from 'react-native-paper';
+import { useTheme, Button, Text, ActivityIndicator } from 'react-native-paper';
+import { sosService } from '../services/sosService';
+import ChatComponent from '../components/ChatComponent';
 
 type SOSActiveScreenRouteProp = RouteProp<RootStackParamList, 'SOSActive'>;
 
@@ -17,134 +13,88 @@ const SOSActiveScreen = () => {
     const route = useRoute<SOSActiveScreenRouteProp>();
     const navigation = useNavigation();
     const theme = useTheme();
+    const { sosId } = route.params;
     const [status, setStatus] = useState('Initializing...');
-    const [sosId, setSosId] = useState<string | null>(null);
-    const cameraRef = useRef<CameraView>(null);
-    const [permission, requestPermission] = useCameraPermissions();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        startSOS();
-        return () => {
-            // Cleanup if needed, but we want background task to persist until explicitly ended
-        };
-    }, []);
+        if (sosId) {
+            initializeSOS();
+        }
+    }, [sosId]);
 
-    const uploadImage = async (uri: string): Promise<string | null> => {
+    const initializeSOS = async () => {
         try {
-            const filename = uri.substring(uri.lastIndexOf('/') + 1);
-            const storageRef = firebaseStorage.ref(`sos_images/${new Date().getTime()}_${filename}`);
-            await storageRef.putFile(uri);
-            return await storageRef.getDownloadURL();
+            setStatus('Starting background tracking...');
+            await sosService.startSOSUpdates(sosId);
+            setStatus('SOS Active. Sharing location...');
         } catch (error) {
-            console.error('Image upload failed:', error);
-            return null;
+            console.error("Failed to start updates:", error);
+            setStatus('Error starting tracking.');
         }
     };
 
-    const startSOS = async () => {
-        try {
-            if (!permission?.granted) {
-                await requestPermission();
-            }
-
-            setStatus('Capturing location...');
-            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-
-            setStatus('Capturing evidence...');
-            let imageUrl = null;
-            if (cameraRef.current) {
-                try {
-                    const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
-                    if (photo?.uri) {
-                        setStatus('Uploading evidence...');
-                        imageUrl = await uploadImage(photo.uri);
+    const handleEndSOS = async () => {
+        Alert.alert(
+            'End SOS',
+            'Are you safe? This will stop sharing your location.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'I AM SAFE',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setLoading(true);
+                        try {
+                            await sosService.endSOS(sosId);
+                            navigation.goBack();
+                        } catch (error) {
+                            console.error("Failed to end SOS:", error);
+                            Alert.alert('Error', 'Failed to end SOS. Please try again.');
+                        }
+                        setLoading(false);
                     }
-                } catch (e) {
-                    console.warn('Camera capture failed:', e);
                 }
-            }
-
-            setStatus('Activating SOS...');
-            const createSOS = firebaseFunctions.httpsCallable('createSOS');
-            const result = await createSOS({
-                currentLocation: {
-                    lat: location.coords.latitude,
-                    lng: location.coords.longitude,
-                    accuracy: location.coords.accuracy,
-                },
-                imageRefs: imageUrl ? [imageUrl] : [],
-            });
-
-            const data = result.data as { sosId: string };
-            setSosId(data.sosId);
-            await SecureStore.setItemAsync('active_sos_id', data.sosId);
-
-            setStatus('SOS Active. Tracking location...');
-
-            // Start background location updates
-            await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-                accuracy: Location.Accuracy.High,
-                distanceInterval: 10, // Update every 10 meters
-                deferredUpdatesInterval: 5000, // Minimum 5 seconds
-                foregroundService: {
-                    notificationTitle: "SOS Active",
-                    notificationBody: "Sharing your live location with emergency contacts.",
-                    notificationColor: "#FF0000",
-                },
-            });
-
-        } catch (error) {
-            console.error(error);
-            setStatus('Error: ' + (error as any).message);
-        }
-    };
-
-    const endSOS = async () => {
-        if (!sosId) return;
-        try {
-            setStatus('Ending SOS...');
-
-            // Stop background task
-            await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-            await SecureStore.deleteItemAsync('active_sos_id');
-
-            const endSOSFunc = firebaseFunctions.httpsCallable('endSOS');
-            await endSOSFunc({ sosId });
-
-            navigation.goBack();
-        } catch (error) {
-            console.error(error);
-            alert('Failed to end SOS. Please try again.');
-            setStatus('SOS Active. Tracking location...'); // Revert status if failed
-        }
+            ]
+        );
     };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.errorContainer }]}>
-            <View style={styles.content}>
-                <Text style={[styles.status, { color: theme.colors.onErrorContainer }]}>{status}</Text>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
+                <View style={styles.content}>
+                    <Text variant="displaySmall" style={[styles.status, { color: theme.colors.onErrorContainer }]}>
+                        SOS ACTIVE
+                    </Text>
 
-                {!sosId && <ActivityIndicator size="large" color={theme.colors.error} />}
+                    <Text variant="bodyLarge" style={{ color: theme.colors.onErrorContainer, textAlign: 'center', marginBottom: 10 }}>
+                        {status}
+                    </Text>
 
-                {/* Camera Preview (Small, to ensure capture works) */}
-                <View style={styles.cameraContainer}>
-                    <CameraView style={styles.camera} ref={cameraRef} facing="back" />
-                </View>
+                    {sosId && (
+                        <View style={styles.chatContainer}>
+                            <ChatComponent sosId={sosId} />
+                        </View>
+                    )}
 
-                {sosId && (
                     <Button
                         mode="contained"
-                        onPress={endSOS}
+                        onPress={handleEndSOS}
                         style={styles.endButton}
                         buttonColor={theme.colors.error}
                         textColor={theme.colors.onError}
                         contentStyle={{ height: 60 }}
                         labelStyle={{ fontSize: 20, fontWeight: 'bold' }}
+                        loading={loading}
+                        disabled={loading}
                     >
                         END SOS
                     </Button>
-                )}
-            </View>
+                </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
@@ -155,29 +105,23 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: 20,
+        alignItems: 'center',
     },
     status: {
-        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 30,
+        marginBottom: 10,
         textAlign: 'center',
     },
-    cameraContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 10,
-        overflow: 'hidden',
-        marginBottom: 20,
-        opacity: 0.5, // Subtle preview
-    },
-    camera: {
+    chatContainer: {
         flex: 1,
+        width: '100%',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderRadius: 20,
+        marginBottom: 20,
+        overflow: 'hidden',
     },
     endButton: {
-        marginTop: 50,
         width: '100%',
         borderRadius: 30,
     },
